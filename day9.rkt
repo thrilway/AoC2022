@@ -7,7 +7,10 @@
       #t
       #f))
 (define (catch-up t h)
-    (let ((dx (sgn (- (car h) (car t)))) (dy (sgn (- (cdr h) (cdr t)))))
+    (let ((dx (sgn                      ;(sgn n) -> 1 if n>0, -1 if n<0, 0 if n=0
+                (- (car h) (car t))))   
+          (dy (sgn                      ;(sgn n) -> 1 if n>0, -1 if n<0, 0 if n=0
+                (- (cdr h) (cdr t)))))
       (cons (+ (car t) dx) (+ (cdr t) dy))))
 
 (define (part1 in)
