@@ -10,7 +10,11 @@
             (else (loop cur (string->number (second (string-split cur " "))) x (add1 cycle) next-acc))))))
 (define (part2 in)
   (let loop ((cur (read-line in)) (hold '()) (X 1) (cycle 0) (acc ""))
-    (cond ((eof-object? cur) (display acc))
+    (cond ((eof-object? cur) 
+           (begin
+             (display acc)
+             (newline)
+             ))
           ((= 40 cycle)
            (begin
              (display acc)
