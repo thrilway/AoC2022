@@ -1,0 +1,90 @@
+#lang racket
+(require "day13data.rkt" "day13rawdata.rkt")
+(define ordered?
+  (let ((cache (make-hash)))
+    (lambda (p)
+      (if (hash-has-key? cache p)
+          (hash-ref cache p)
+          (let loop ((l-rem (car p)) (r-rem (cdr p)))
+            (cond
+              ((and (null? l-rem) (null? r-rem)) (hash-ref! cache p '()))
+              ((null? l-rem) (hash-ref! cache p #t))
+              ((null? r-rem) (hash-ref! cache p #f))
+              ((and
+                (integer? (car l-rem))
+                (integer? (car r-rem))
+                (< (car l-rem) (car r-rem)))
+               (hash-ref! cache p #t))
+              ((and
+                (integer? (car l-rem))
+                (integer? (car r-rem))
+                (> (car l-rem) (car r-rem)))
+               (hash-ref! cache p #f))
+              ((and
+                (integer? (car l-rem))
+                (integer? (car r-rem)))
+               (loop (cdr l-rem) (cdr r-rem)))
+              ((and
+                (list? (car l-rem))
+                (list? (car r-rem)))
+               (let ((res (ordered? (cons (car l-rem) (car r-rem)))))
+                 (if
+                  (null? res)
+                  (loop (cdr l-rem) (cdr r-rem))
+                  res)))
+              ((integer? (car l-rem)) (loop (cons (list (car l-rem)) (cdr l-rem)) r-rem))
+              ((integer? (car r-rem)) (loop l-rem (cons (list (car r-rem)) (cdr r-rem))))
+              (else (loop (cdr l-rem) (cdr r-rem)))))))))
+(define (part1 lst)
+  (for/fold
+   ((out '())
+    #:result (apply + out))
+   ((p (in-list lst))
+    (i (in-naturals 1)))
+    (if (ordered? p)
+        (append out (list i))
+        out)))
+(define (process str)
+  (define (process-list lst)
+    (let loop ((rem (cdr (take lst (sub1 (length lst))))) (hold '()) (cur "") (left 0) (acc '()))
+      (cond ((null? rem)
+             (let ((cur-int (string->number cur)))
+               (if (integer? cur-int)
+                   (append acc (list cur-int))
+                   acc)))
+            ((not (char? (car rem))) (loop (cdr rem) hold cur left (append acc (list (car rem)))))
+            ((char=? (car rem) #\])
+             (loop (append (take hold (sub1 left))
+                           (list (process-list (drop (append hold acc
+                                                             (if (string=? cur "") (list (car rem)) (list (string->number cur) (car rem))))
+                                                     (sub1 left))))
+                           (cdr rem))
+                   '()
+                   ""
+                   0
+                   '()))
+            ((char=? (car rem) #\[)
+             (let ((count (+ (length hold) (length acc) 1)))
+               (loop (cdr rem) (append hold acc (list (car rem))) "" count '())))
+            ((char=? (car rem) #\,)
+             (let ((cur-int (string->number cur)))
+               (if
+                (integer? cur-int)
+                (loop (cdr rem) hold "" left (append acc (list cur-int)))
+                (loop (cdr rem) hold "" left acc))))
+            (else (loop (cdr rem) hold (string-append cur (string (car rem))) left acc)))))
+  (let loop ((rem (string-split str "\n")) (acc '()))
+    (cond ((null? rem) acc)
+          ((string=? (string-trim (car rem)) "") (loop (cdr rem) acc))
+          (else (loop (cdr rem) (append acc (list (process-list (string->list (car rem))))))))))
+
+(define (part2 lst)
+  (let ((packets (sort (append lst '(((2)) ((6)))) (lambda (x y) (ordered? (cons x y))))))
+    (begin
+      (for
+          ((x packets))
+        (display x)
+        (newline))
+      (* (add1 (index-of packets '((2)))) (add1 (index-of packets '((6))))))))
+
+(part2 (process raw-data))
